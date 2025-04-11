@@ -81,9 +81,19 @@
                             <div class="lat">lat: {{item.position[1]}}</div>
                         </div>
                     </td>
-                    <td @click="modifyString(item.name, index, 'name')">{{item.name}}</td>
-                    <td @click="modifyString(item.note, index, 'note')">{{item.note}}</td>
-                    <td @click="modifyString(item.type, index, 'type')">{{item.type}}</td>
+                    <td @click="modifyString(item.name, index, 'name')">
+                        <div class="textarea">{{item.name}}</div>
+                    </td>
+                    <td @click="modifyString(item.note, index, 'note')">
+                        <div class="textarea">{{item.note}}</div>
+                    </td>
+                    <td>
+                        <ElSelect size="small" v-model="item.type">
+                            <template v-for="key in EnumPointerType" :key="key">
+                                <ElOption v-if="isNaN(EnumPointerType[key])" :label="EnumPointerTypeMap.get(key)" :value="key"/>
+                            </template>
+                        </ElSelect>
+                    </td>
                     <td>
                         <div class="img-wrapper">
                             <img v-if="item.img" :src="`${item.img}-${imgSuffix}`" alt="图片">
@@ -118,7 +128,7 @@
             <div>
                 <ElForm label-position="top">
                     <ElFormItem label="修改">
-                        <ElInput autosize type="textarea" :rows="5" v-model="currentModifyingString"/>
+                        <ElInput type="textarea" :rows="5" v-model="currentModifyingString"/>
                     </ElFormItem>
                 </ElForm>
             </div>
@@ -427,7 +437,7 @@ thead{
 tbody{
     tr{
         &:hover{
-            outline: 1px solid $color-main;
+            background-color: transparentize($color-main, 0.9);
         }
     }
     tr:nth-child(2n + 1){
@@ -448,4 +458,6 @@ tbody{
         width: 100%;
     }
 }
+
+
 </style>

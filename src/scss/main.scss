@@ -38,6 +38,20 @@ body{
     bottom: 60px;
 }
 
+.textarea{
+    padding: 2px 3px;
+    min-height: 30px;
+    border: 1px solid transparentize(black, 0.8);
+    @include border-radius(3px);
+    &:hover{
+        outline: 2px solid transparentize($color-main, 0.5);
+        //background-color: transparentize($color-main, 0.9);
+        background-color: white;
+        cursor: text;
+        border-color: $color-main;
+    }
+}
+
 
 .menu{
     overflow: hidden;
