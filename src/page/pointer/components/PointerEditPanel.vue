@@ -1,145 +1,3 @@
-<template>
-    <div>
-
-        <div class="circle-panel card">
-            <div class="toolbar">
-                <ElButton class="lnglat" :data-clipboard-text="JSON.stringify(modelData)" size="small" type="info" icon="CopyDocument">复制 JSON 数据</ElButton>
-                <ElButton size="small" type="danger" @click="clearAllPointers" icon="RefreshLeft">清空</ElButton>
-                <ElButton size="small" type="warning" @click="reversePointers" icon="Sort">倒序</ElButton>
-            </div>
-
-            <table class="log">
-                <thead>
-                <tr>
-                    <td style="width: 30px;">#</td>
-                    <td style="width: 80px;">经纬</td>
-                    <td style="width: 100px;">地点</td>
-                    <td style="width: 100px;">备注</td>
-                    <td style="width: 80px;">类别</td>
-                    <td style="width: 40px;">图片</td>
-                    <td style="width: 80px;">操作</td>
-                </tr>
-                </thead>
-                <tbody>
-                <tr>
-                    <td><i class="el-icon-aim"></i></td>
-                    <td>
-                        <ElTooltip effect="dark" trigger="hover" placement="left" content="点击复制坐标值">
-                            <div class="lnglat" :data-clipboard-text="`[${lng}, ${lat}]`">
-                                <div class="lng">经: {{lng || '--'}}</div>
-                                <div class="lat">纬: {{lat || '--'}}</div>
-                            </div>
-                        </ElTooltip>
-                    </td>
-                    <td>
-                        <ElInput
-                            @keyup.native.enter="addNewPointToPointerWithKeyEnter"
-                            clearable
-                            ref="refInputName" class="input-focus" size="small"
-                            placeholder="标记名"
-                            v-model="pointerName"/>
-                    </td>
-                    <td>
-                        <ElInput
-                            type="textarea"
-                            autosize
-                            clearable
-                            ref="inputNote" class="input-focus" size="small"
-                            placeholder="备注"  :rows="1"
-                            v-model="pointerNote"/>
-                    </td>
-                    <td>
-                        <ElSelect size="small" v-model="pointerType">
-                            <template v-for="key in EnumPointerType" :key="key">
-                                <ElOption v-if="isNaN(EnumPointerType[key])" :label="EnumPointerTypeMap.get(key)" :value="key"/>
-                            </template>
-                        </ElSelect>
-                    </td>
-                    <td>
-                        <ElTooltip effect="dark" trigger="hover" placement="top" content="点击上传图片">
-                            <div class="img-wrapper">
-                                <img v-if="pointerImg" :src="`${pointerImg}-${imgSuffix}`" alt="图片">
-                                <label class="logo avatar" for="avatar">
-                                    <ElIcon size="14"><Upload/></ElIcon>
-                                </label>
-                                <input type="file" @change="uploadAvatar" id="avatar">
-                            </div>
-                        </ElTooltip>
-
-                    </td>
-                    <td>
-                        <ElButton size="small" type="success" @click="addNewPointToPointer" icon="Plus">添加</ElButton>
-                    </td>
-                </tr>
-
-                <tr v-for="(item, index) in modelData" :key="index">
-                    <td>{{index + 1}}</td>
-                    <!--                <td @click="modifyString(item.position, index, 'position')">-->
-                    <td>
-                        <div class="lnglat" :data-clipboard-text="`[${lng}, ${lat}]`">
-                            <div class="lng">lng: {{item.position[0]}}</div>
-                            <div class="lat">lat: {{item.position[1]}}</div>
-                        </div>
-                    </td>
-                    <td @click="modifyString(item.name, index, 'name')">
-                        <div class="textarea">{{item.name}}</div>
-                    </td>
-                    <td @click="modifyString(item.note, index, 'note')">
-                        <div class="textarea">{{item.note}}</div>
-                    </td>
-                    <td>
-                        <ElSelect size="small" v-model="item.type">
-                            <template v-for="key in EnumPointerType" :key="key">
-                                <ElOption v-if="isNaN(EnumPointerType[key])" :label="EnumPointerTypeMap.get(key)" :value="key"/>
-                            </template>
-                        </ElSelect>
-                    </td>
-                    <td>
-                        <div class="img-wrapper">
-                            <img v-if="item.img" :src="`${item.img}-${imgSuffix}`" alt="图片">
-                            <label class="logo avatar" for="avatar" @click="currentPointIndex = index">
-                                <ElIcon size="14"><Upload/></ElIcon>
-                            </label>
-                        </div>
-                    </td>
-                    <td>
-                        <div :class="['operation', {'align-items-start': index > 0}, {'align-items-end': index < modelData.length - 1}]">
-                            <div class="move">
-                                <ElIcon v-if="index > 0"  @click="move(index, 'up')" size="12"><CaretTop/></ElIcon>
-                                <ElIcon v-if="index < modelData.length - 1" @click="move(index, 'down')" size="12"><CaretBottom/></ElIcon>
-                            </div>
-                            <div class="delete">
-                                <ElIcon @click="pointerPointDelete(index)" size="15"><CircleClose/></ElIcon>
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
-        </div>
-
-        <ElDialog
-            center
-            title=""
-            append-to-body
-            v-model="isModalShowing"
-            :before-close="closeModal"
-            width="400px">
-            <div>
-                <ElForm label-position="top">
-                    <ElFormItem label="修改">
-                        <ElInput type="textarea" :rows="5" v-model="currentModifyingString"/>
-                    </ElFormItem>
-                </ElForm>
-            </div>
-            <template #footer class="dialog-footer">
-                <ElButton type="info" @click="isModalShowing = false" icon="Close">取消</ElButton>
-                <ElButton type="primary" @click="submitStringChange" icon="Check">确定</ElButton>
-            </template>
-        </ElDialog>
-    </div>
-</template>
-
 <script lang="ts" setup>
 import ClipboardJS from 'clipboard'
 import {qiniu_bucket_name, qiniu_img_base_url, thumbnail200_suffix} from "@/mapConfig.ts";
@@ -149,12 +7,15 @@ import {ElMessage} from "element-plus";
 import {getUploadToken} from "@/api/fileApi.ts";
 import {nextTick, onMounted, onUnmounted, ref, watch} from "vue";
 import {EntityPointerPoint, EnumPointerType, EnumPointerTypeMap} from "@/page/pointer/Pointer.ts";
+import {useProjectStore} from "@/pinia.ts";
 
 const pointerName = ref('') // 当前点的地名
 const pointerNote = ref('') // 标记note
 const pointerType = ref('') // 标记类别
 const pointerImg = ref('') // 标记图片地址
 const avatarFile = ref()
+
+const projectStore = useProjectStore()
 
 const clipboardPointerData = ref('') // 要复制的所有路线点的数据
 let clipboard = null
@@ -364,11 +225,153 @@ watch(modelData, newValue => {
 })
 </script>
 
+<template>
+    <div>
+        <div class="circle-panel card" :style="`height: ${projectStore.contentInsets.heightContent - 200}px`">
+            <div class="toolbar">
+                <ElButton class="lnglat" :data-clipboard-text="JSON.stringify(modelData)" size="small" type="info" icon="CopyDocument">复制 JSON 数据</ElButton>
+                <ElButton size="small" type="danger" @click="clearAllPointers" icon="RefreshLeft">清空</ElButton>
+                <ElButton size="small" type="warning" @click="reversePointers" icon="Sort">倒序</ElButton>
+            </div>
+
+            <table class="log">
+                <thead>
+                <tr>
+                    <td style="width: 30px;">#</td>
+                    <td style="width: 80px;">经纬</td>
+                    <td style="width: 100px;">地点</td>
+                    <td style="width: 100px;">备注</td>
+                    <td style="width: 80px;">类别</td>
+                    <td style="width: 40px;">图片</td>
+                    <td style="width: 80px;">操作</td>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td><i class="el-icon-aim"></i></td>
+                    <td>
+                        <ElTooltip effect="dark" trigger="hover" placement="left" content="点击复制坐标值">
+                            <div class="lnglat" :data-clipboard-text="`[${lng}, ${lat}]`">
+                                <div class="lng">经: {{lng || '--'}}</div>
+                                <div class="lat">纬: {{lat || '--'}}</div>
+                            </div>
+                        </ElTooltip>
+                    </td>
+                    <td>
+                        <ElInput
+                            @keyup.native.enter="addNewPointToPointerWithKeyEnter"
+                            clearable
+                            ref="refInputName" class="input-focus" size="small"
+                            placeholder="标记名"
+                            v-model="pointerName"/>
+                    </td>
+                    <td>
+                        <ElInput
+                            type="textarea"
+                            autosize
+                            clearable
+                            ref="inputNote" class="input-focus" size="small"
+                            placeholder="备注"  :rows="1"
+                            v-model="pointerNote"/>
+                    </td>
+                    <td>
+                        <ElSelect size="small" v-model="pointerType">
+                            <template v-for="key in EnumPointerType" :key="key">
+                                <ElOption v-if="isNaN(EnumPointerType[key])" :label="EnumPointerTypeMap.get(key)" :value="key"/>
+                            </template>
+                        </ElSelect>
+                    </td>
+                    <td>
+                        <ElTooltip effect="dark" trigger="hover" placement="top" content="点击上传图片">
+                            <div class="img-wrapper">
+                                <img v-if="pointerImg" :src="`${pointerImg}-${imgSuffix}`" alt="图片">
+                                <label class="logo avatar" for="avatar">
+                                    <ElIcon size="14"><Upload/></ElIcon>
+                                </label>
+                                <input type="file" @change="uploadAvatar" id="avatar">
+                            </div>
+                        </ElTooltip>
+
+                    </td>
+                    <td>
+                        <ElButton size="small" type="success" @click="addNewPointToPointer" icon="Plus">添加</ElButton>
+                    </td>
+                </tr>
+
+                <tr v-for="(item, index) in modelData" :key="index">
+                    <td>{{index + 1}}</td>
+                    <!--                <td @click="modifyString(item.position, index, 'position')">-->
+                    <td>
+                        <div class="lnglat" :data-clipboard-text="`[${lng}, ${lat}]`">
+                            <div class="lng">lng: {{item.position[0]}}</div>
+                            <div class="lat">lat: {{item.position[1]}}</div>
+                        </div>
+                    </td>
+                    <td @click="modifyString(item.name, index, 'name')">
+                        <div class="textarea">{{item.name}}</div>
+                    </td>
+                    <td @click="modifyString(item.note, index, 'note')">
+                        <div class="textarea">{{item.note}}</div>
+                    </td>
+                    <td>
+                        <ElSelect size="small" v-model="item.type">
+                            <template v-for="key in EnumPointerType" :key="key">
+                                <ElOption v-if="isNaN(EnumPointerType[key])" :label="EnumPointerTypeMap.get(key)" :value="key"/>
+                            </template>
+                        </ElSelect>
+                    </td>
+                    <td>
+                        <div class="img-wrapper">
+                            <img v-if="item.img" :src="`${item.img}-${imgSuffix}`" alt="图片">
+                            <label class="logo avatar" for="avatar" @click="currentPointIndex = index">
+                                <ElIcon size="14"><Upload/></ElIcon>
+                            </label>
+                        </div>
+                    </td>
+                    <td>
+                        <div :class="['operation', {'align-items-start': index > 0}, {'align-items-end': index < modelData.length - 1}]">
+                            <div class="move">
+                                <ElIcon v-if="index > 0"  @click="move(index, 'up')" size="12"><CaretTop/></ElIcon>
+                                <ElIcon v-if="index < modelData.length - 1" @click="move(index, 'down')" size="12"><CaretBottom/></ElIcon>
+                            </div>
+                            <div class="delete">
+                                <ElIcon @click="pointerPointDelete(index)" size="15"><CircleClose/></ElIcon>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <ElDialog
+            center
+            title=""
+            append-to-body
+            v-model="isModalShowing"
+            :before-close="closeModal"
+            width="400px">
+            <div>
+                <ElForm label-position="top">
+                    <ElFormItem label="修改">
+                        <ElInput type="textarea" :rows="5" v-model="currentModifyingString"/>
+                    </ElFormItem>
+                </ElForm>
+            </div>
+            <template #footer class="dialog-footer">
+                <ElButton type="info" @click="isModalShowing = false" icon="Close">取消</ElButton>
+                <ElButton type="primary" @click="submitStringChange" icon="Check">确定</ElButton>
+            </template>
+        </ElDialog>
+    </div>
+</template>
+
 <style scoped lang="scss">
 @use 'sass:math';
 
 @import "../../../scss/plugin";
 .circle-panel {
+    overflow-y: auto;
     width: 500px;
     padding: 0;
 }

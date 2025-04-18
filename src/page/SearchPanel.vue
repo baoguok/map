@@ -79,11 +79,18 @@ const isShowResultPanel = ref(true)
 
     <!-- 搜索结果面板 -->
     <div class="result card mt-1 mb-1" v-if="searchResultList && isShowResultPanel">
-        <ElTable size="small" :data="searchResultList" @row-click="selectLocation">
+        <ElTable size="small" :data="searchResultList" @row-click="selectLocation" :height="150">
             <ElTableColumn label="名字" prop="formatted_address"></ElTableColumn>
             <ElTableColumn label="类别" prop="level" width="80" align="center"></ElTableColumn>
             <ElTableColumn label="坐标" prop="location" width="150"></ElTableColumn>
         </ElTable>
     </div>
 </template>
+
+<style lang="scss" scoped>
+.result {
+    //height: 200px;
+    overflow-y: auto;
+}
+</style>
 
