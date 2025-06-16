@@ -55,6 +55,7 @@
             <div class="mt-1">
                 <ElButton type="primary" size="small" icon="PriceTag" @click="toggleMarkerDisplay">{{isMarkerShowed? '隐藏': '显示'}}标签</ElButton>
                 <ElButton type="primary" size="small" icon="Location" @click="togglePathDisplay">{{isPathShowed? '隐藏': '显示'}}路径</ElButton>
+                <ElButton type="success" size="small" icon="Download" @click="downloadSvg">下载路径 SVG 文件</ElButton>
                 <!--                <ElButton type="success" size="small" icon="el-icon-suitcase-1" @click="saveMapConfig">保存偏移量设置</ElButton>-->
                 <!--                <ElButton type="success" size="small" icon="el-icon-medal-1" @click="toggleKmDisplay"-->
                 <!--                           v-if="pathPointers[0] && pathPointers[0].extensions && pathPointers[0].extensions.distance">切换公里数显示</ElButton>-->
@@ -82,7 +83,7 @@ import {XMLParser, XMLBuilder, XMLValidator} from "fast-xml-parser"
 
 import {Base64} from "js-base64"
 import PointerListPanel from "../pointer/components/PointerListPanel.vue";
-import {dateFormatter} from "@/utility";
+import {dateFormatter, downloadBase64File} from "@/utility";
 import ICON from "@/assets/icons";
 
 import Moment from "moment"
@@ -91,6 +92,8 @@ import {useProjectStore} from "@/pinia";
 import {useRoute, useRouter} from "vue-router";
 import {computed, onMounted, onUnmounted, ref, watch} from "vue";
 
+// svg generate section
+import geosvg from "geosvg";
 
 const store = useProjectStore()
 const route = useRoute()
@@ -143,8 +146,8 @@ const kmMarkers = ref([])
 // float route list
 const isPointerListShowed = true // route list 是否显示
 
-
-
+// svg generate section
+const svgString = ref('')
 
 onMounted(() => {
     getMapConfig()
@@ -299,6 +302,22 @@ function fileChange(files: File){
                 attributeNamePrefix : "_"
             })
             xmlObj.value = xmlParser.parse(this.result)
+
+            svgString.value = geosvg.fromGpx(this.result).toSvg({
+                smooth: true, // whether to smoothen the lines or not
+                smoothing: 0.2, // smoothening factor
+                accuracy: 0.001, // accuracy of distance measurements
+                scale: undefined, // max-dimensions to scale the svg too
+                svg: {
+                    width: undefined, // width of the svg, ideally leave it undefined
+                    height: undefined, // height of the svg, ideally leave it undefined
+                    stroke: "red", // stroke color of the svg
+                    strokeWidth: 4, // stroke with of the svg
+                    strokeLinecap: "round", // stroke's line-cap style
+                    strokeMiterlimit: 4, // stroke's Miter limit
+                    fill: "none", // whether to fill in the path with a color
+                }
+            })
             // console.log(xmlParser.parse(this.result))
             loadAllPointer(true)
         }
@@ -559,6 +578,11 @@ onUnmounted(() => {
     map.destroy() // 销毁地图，释放内存
     map = null
 })
+
+// download svg
+function downloadSvg(){
+    downloadBase64File('path.svg', svgString.value )
+}
 </script>
 
 <style lang="scss" scoped>

@@ -30,6 +30,17 @@ function deleteAuthorization() {
 }
 
 
+function downloadBase64File(fileName: string, data: string) { // 下载 base64 图片
+    let aLink = document.createElement('a')
+    let blob = new Blob([data], { type: 'application/octet-stream' }); // Set MIME type
+    let evt = document.createEvent("HTMLEvents")
+    evt.initEvent("click", true, true); //initEvent 不加后两个参数在FF下会报错  事件类型，是否冒泡，是否阻止浏览器的默认行为
+    aLink.download = fileName
+    aLink.href = URL.createObjectURL(blob)
+    aLink.click()
+}
+
+
 // CONST
 enum EnumWeekDay {
     '周日' = 0,
@@ -137,6 +148,7 @@ export {
     dateProcess,
     dateFormatter,
     deleteAuthorization,
+    downloadBase64File,
 
     type EntityAuthorization
 }

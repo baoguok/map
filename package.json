@@ -34,7 +34,8 @@
     "fast-xml-parser": "^4.3.3",
     "filemanager-webpack-plugin": "^7.0.0",
     "marked": "^4.2.4",
-    "qiniu-js": "^3.4.1"
+    "qiniu-js": "^3.4.1",
+    "geosvg": "^1.2.3"
   },
   "devDependencies": {
     "@types/mockjs": "^1.0.10",

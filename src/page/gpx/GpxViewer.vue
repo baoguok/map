@@ -54,8 +54,9 @@
             </ElForm>
 
             <div class="mt-1">
-                <ElButton type="primary" size="small" icon="PriceTag" @click="toggleMarkerDisplay">{{isMarkerShowed? '隐藏': '显示'}}标签</ElButton>
-                <ElButton type="primary" size="small" icon="Location" @click="togglePathDisplay">{{isPathShowed? '隐藏': '显示'}}路径</ElButton>
+                <ElButton type="default" size="small" icon="PriceTag" @click="toggleMarkerDisplay">{{isMarkerShowed? '隐藏': '显示'}}标签</ElButton>
+                <ElButton type="default" size="small" icon="Location" @click="togglePathDisplay">{{isPathShowed? '隐藏': '显示'}}路径</ElButton>
+                <ElButton type="success" size="small" icon="Download" @click="downloadSvg">下载路径 SVG 文件</ElButton>
 <!--                <ElButton type="success" size="small" icon="el-icon-suitcase-1" @click="saveMapConfig">保存偏移量设置</ElButton>-->
 <!--                <ElButton type="success" size="small" icon="el-icon-medal-1" @click="toggleKmDisplay"-->
 <!--                           v-if="pathPointers[0] && pathPointers[0].extensions && pathPointers[0].extensions.distance">切换公里数显示</ElButton>-->
@@ -79,30 +80,25 @@ import AMapLoader from '@amap/amap-jsapi-loader'
 import PointerDetailPanel from "../pointer/components/PointerDetailPanel.vue"
 import {key_web_js} from "@/mapConfig";
 import pointerApi from "@/api/pointerApi";
-import {XMLParser, XMLBuilder, XMLValidator} from "fast-xml-parser"
+import {XMLParser} from "fast-xml-parser"
 
 import {Base64} from "js-base64"
-import PointerListPanel from "../pointer/components/PointerListPanel.vue";
 import ICON from "@/assets/icons";
 
 import Moment from "moment"
-import {dateFormatter} from "@/utility";
+import {dateFormatter, downloadBase64File} from "@/utility";
 import {useProjectStore} from "@/pinia";
 import {computed, onMounted, onUnmounted, ref, watch} from "vue";
 import {useRoute, useRouter} from "vue-router";
 
 const store = useProjectStore()
 const route = useRoute()
-const router = useRouter()
 
 const MY_POSITION = [117.129533, 36.685668]
 let AMap = null
 let map = null
-let cluster = null  // 点聚合的对象
 
 
-const isLoading = ref(false)
-const currentPointerId = ref(0)
 const activePointerObj = ref(null) // 当前 Line 对象
 
 // xml
@@ -196,19 +192,6 @@ function saveMapConfig(){
         }
     }))
 }
-function toggleKmDisplay(){
-    kmMarkers.value = []
-    pathPointers.value.forEach(item => {
-        if (item.extensions.distance % 1000 === 0){
-            kmMarkers.value.push(item)
-        }
-    })
-    markers.value.forEach(item => item.remove()) // 删除所有 Marker
-    kmMarkers.value.forEach(item => {
-        addMarker(map, item.lnglat, item.extensions.distance, item.ele)
-    })
-
-}
 function toggleMarkerDisplay(){
     if (isMarkerShowed.value){
         markers.value.forEach(item => {
@@ -239,6 +222,16 @@ function togglePathDisplay(){
         isPathShowed.value = true
     }
 }
+
+
+// svg generate section
+import geosvg from "geosvg";
+const svgString = ref('')
+
+// download svg
+function downloadSvg(){
+    downloadBase64File('path.svg', svgString.value )
+}
 function fileChange(files: File){
     if(files.length){
 
@@ -255,6 +248,22 @@ function fileChange(files: File){
                 attributeNamePrefix : "_"
             })
             xmlObj.value = xmlParser.parse(this.result)
+
+            svgString.value = geosvg.fromGpx(this.result).toSvg({
+                smooth: true, // whether to smoothen the lines or not
+                smoothing: 0.2, // smoothening factor
+                accuracy: 0.001, // accuracy of distance measurements
+                scale: undefined, // max-dimensions to scale the svg too
+                svg: {
+                    width: undefined, // width of the svg, ideally leave it undefined
+                    height: undefined, // height of the svg, ideally leave it undefined
+                    stroke: "red", // stroke color of the svg
+                    strokeWidth: 4, // stroke with of the svg
+                    strokeLinecap: "round", // stroke's line-cap style
+                    strokeMiterlimit: 4, // stroke's Miter limit
+                    fill: "none", // whether to fill in the path with a color
+                }
+            })
             // console.log(xmlParser.parse(this.result))
             loadAllPointer(true)
         }
@@ -399,11 +408,6 @@ function getPointerInfo(pointerId) {
             activePointerObj.value.pointerArray = JSON.parse(Base64.decode(activePointerObj.value.pointers))
             loadPointerLabels(map, activePointerObj.value)
         })
-}
-function resizeMap() {
-    let mapContainer = document.getElementById('container')
-    mapContainer.style.height = window.innerHeight + "px"
-    mapContainer.style.width = window.innerWidth + "px"
 }
 
 function addMarker(map, position, name: string, height: number, extData: any, icon: string, offset: number) {
