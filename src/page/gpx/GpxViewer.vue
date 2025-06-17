@@ -56,7 +56,7 @@
             <div class="mt-1">
                 <ElButton type="default" size="small" icon="PriceTag" @click="toggleMarkerDisplay">{{isMarkerShowed? '隐藏': '显示'}}标签</ElButton>
                 <ElButton type="default" size="small" icon="Location" @click="togglePathDisplay">{{isPathShowed? '隐藏': '显示'}}路径</ElButton>
-                <ElButton type="success" size="small" icon="Download" @click="downloadSvg">下载路径 SVG 文件</ElButton>
+                <ElButton type="success" size="small" icon="Download" @click="downloadSvg" :disabled="!svgString">下载路径 SVG 文件</ElButton>
 <!--                <ElButton type="success" size="small" icon="el-icon-suitcase-1" @click="saveMapConfig">保存偏移量设置</ElButton>-->
 <!--                <ElButton type="success" size="small" icon="el-icon-medal-1" @click="toggleKmDisplay"-->
 <!--                           v-if="pathPointers[0] && pathPointers[0].extensions && pathPointers[0].extensions.distance">切换公里数显示</ElButton>-->
@@ -230,7 +230,7 @@ const svgString = ref('')
 
 // download svg
 function downloadSvg(){
-    downloadBase64File('path.svg', svgString.value )
+    downloadBase64File(`${xmlFile.value.name}.svg`, svgString.value )
 }
 function fileChange(files: File){
     if(files.length){
