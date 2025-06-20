@@ -1,7 +1,7 @@
 <template>
     <div class="list-panel">
         <div class="list-title">点图列表</div>
-        <div class="route-line-list">
+        <div class="route-line-list"  :style="`max-height: ${store.windowInsets.height * 0.7 - 70 - 50}px`">
             <div
                 v-if="pointerList.length > 0"
                 v-for="pointer in pointerList" :key="pointer.id"
@@ -28,6 +28,9 @@ import {useRoute} from "vue-router";
 import {EntityPointer} from "@/page/pointer/Pointer.ts";
 const route = useRoute()
 
+import {useProjectStore} from "@/pinia";
+const store = useProjectStore()
+
 const emit = defineEmits(['chosePointer'])
 defineProps<{
     pointerList: Array<EntityPointer>
@@ -51,9 +54,9 @@ defineProps<{
     font-size: $fz-title;
 }
 .route-line-list{
+    overflow-y: auto;
     min-height: 100px;
     //@include border-radius($radius);
-    overflow: hidden;
     background-color: white;
     width: 350px;
     .route-line-list-item{
