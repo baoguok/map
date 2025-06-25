@@ -39,19 +39,31 @@ import {EntityPointer, EntityPointerPoint} from "@/page/pointer/Pointer.ts";
 import {generateMarkerContent, getMaxBoundsPointer} from "@/page/MyMapLib.ts";
 import {onMounted, onUnmounted, ref, watch} from "vue";
 import {useRoute, useRouter} from "vue-router";
+
+// 添加 AMap 类型定义
+declare global {
+    interface Window {
+        map: any;
+    }
+}
+
 const store = useProjectStore()
 const route = useRoute()
 const router = useRouter()
 
 const MY_POSITION = [117.129533, 36.685668]
-let AMap = null
-let cluster = null  // 点聚合的对象
+let AMap: any = null
+let cluster: any = null  // 点聚合的对象
 
 const isLoading = ref(false)
-const activePointerObj = ref(null) // 当前 Line 对象
+const activePointerObj = ref<EntityPointer | null>(null) // 当前点图对象
 const pointerList = ref<Array<EntityPointer>>([]) // 点图数组
-const isPointerListShowed = ref(true) // route list 是否显示
-// pager
+const isPointerListShowed = ref(true) // 点图列表是否显示
+
+// 跟踪标记点以便正确清理
+const currentMarkers = ref<any[]>([])
+
+// 分页器
 const pager = ref({
     pageSize: 20,
     pageNo: 1,
@@ -81,7 +93,7 @@ onMounted(() => {
             window.map.addControl(new AMap.Scale())
 
             if (route.query.pointerId){
-                getPointerInfo(route.query.pointerId)
+                getPointerInfo(route.query.pointerId as string)
             }
             getPointerList()
         })
@@ -91,8 +103,11 @@ onMounted(() => {
 })
 
 function openInGaodeApp(){
-    let originLnglat = activePointerObj.value.pointerArray[0].position // [lng, lat]
-    let destLnglat = activePointerObj.value.pointerArray[activePointerObj.value.pointerArray.length - 1].position // [lng, lat]
+    if (!activePointerObj.value || !activePointerObj.value.pointer_array) {
+        return
+    }
+    let originLnglat = activePointerObj.value.pointer_array[0].position // [lng, lat]
+    let destLnglat = activePointerObj.value.pointer_array[activePointerObj.value.pointer_array.length - 1].position // [lng, lat]
     window.map.plugin('AMap.Driving', () => {
         let currentDriving = new AMap.Driving({
             map: window.map,
@@ -101,7 +116,7 @@ function openInGaodeApp(){
         currentDriving.search(
             new AMap.LngLat(...originLnglat),
             new AMap.LngLat(...destLnglat),
-            function (status, result) {
+            function (status: string, result: any) {
                 // result 即是对应的驾车导航信息，相关数据结构文档请参考
                 // https://lbs.amap.com/api/javascript-api/reference/route-search#m_DrivingResult
                 if (status === 'complete') {
@@ -130,14 +145,14 @@ function getPointerList() {
         .then(res => {
             isLoading.value = false
             pager.value = res.data.pager
-            pointerList.value = res.data.list.map(item => {
+            pointerList.value = res.data.list.map((item: any) => {
                 try  {
                     item.pointers = Base64.decode(item.pointers) || '[]'
                 } catch (err) {
                     item.pointers = '[]'
                     console.log(err)
                 }
-                item.pointerArray = JSON.parse(item.pointers)
+                item.pointer_array = JSON.parse(item.pointers)
                 item.date_init = dateFormatter(new Date(item.date_init))
                 item.date_modify = dateFormatter(new Date(item.date_modify))
                 return item
@@ -148,7 +163,7 @@ function getPointerList() {
         })
 }
 
-// Change Pointer
+// 切换点图
 function changePointer(pointerId: number){
     router.push({
         name: 'PointerViewer',
@@ -161,28 +176,32 @@ function changePointer(pointerId: number){
     }
 }
 
-function getPointerInfo(pointerId: number) {
+function getPointerInfo(pointerId: string) {
     pointerApi
         .detail({
             id: pointerId
         })
         .then(res => {
             activePointerObj.value = res.data
-            activePointerObj.value.pointerArray = JSON.parse(Base64.decode(activePointerObj.value.pointers))!
-            loadPointerLabels(window.map, activePointerObj.value)
+            if (activePointerObj.value && activePointerObj.value.pointers) {
+                activePointerObj.value.pointer_array = JSON.parse(Base64.decode(activePointerObj.value.pointers))
+                loadPointerLabels(window.map, activePointerObj.value)
+            }
         })
 }
 
 // 设置地图中心点：用户坐标
-function setMapCenterToUserLocation(status, res) {
+function setMapCenterToUserLocation(status: string, res: any) {
     if (status === 'complete') {
-        let center = [res.position.lng, res.position.lat]
+        let center: [number, number] = [res.position.lng, res.position.lat]
         window.map.setCenter(center)
         addMarker(window.map, {
             position: center,
             name: '我的位置',
-            note: ''
-        })
+            note: '',
+            img: '',
+            type: ''
+        }, 0)
     } else {
         console.log(res)
     }
@@ -190,14 +209,23 @@ function setMapCenterToUserLocation(status, res) {
 
 function resizeMap() {
     let mapContainer = document.getElementById('container')
-    mapContainer.style.height = window.innerHeight + "px"
-    mapContainer.style.width = window.innerWidth + "px"
+    if (mapContainer) {
+        mapContainer.style.height = window.innerHeight + "px"
+        mapContainer.style.width = window.innerWidth + "px"
+    }
 }
 
 
-// 添加点图 Label
-function loadPointerLabels(map, pointer: EntityPointer) {
-    let pointers = pointer.pointerArray.map(item => {
+// 添加点图标记
+function loadPointerLabels(map: any, pointer: EntityPointer) {
+    // 清除现有标记点和聚合
+    clearAllMarkers(map)
+    
+    if (!pointer.pointer_array || pointer.pointer_array.length === 0) {
+        return
+    }
+    
+    let pointers = pointer.pointer_array.map((item: any) => {
                                             item.weight = 1
                                             item.lnglat = item.position
                                             return item
@@ -207,7 +235,7 @@ function loadPointerLabels(map, pointer: EntityPointer) {
     // 最终聚合之后，只显示一个点，这个点就是权重比较大的点，context 数据里的 clusterData 也只显示这个聚合位置的点，
     // 如果不显示报警的点，就无法获取这个点的报警状态，就无法显示报警
     // 所以增大报警点的权重
-    const _renderClusterMarker = function (context) {
+    const _renderClusterMarker = function (context: any) {
         // console.log('context cluster: ', context)
         let factor = Math.pow(context.count / count, 1 / 18);
         let div = document.createElement('div');
@@ -232,7 +260,7 @@ function loadPointerLabels(map, pointer: EntityPointer) {
         context.marker.setContent(div)
     };
 
-    const _renderMarker = function(context) {
+    const _renderMarker = function(context: any) {
         // console.log('context normal: ', context)
         let item = context.data[0] as EntityPointerPoint
         context.marker.setContent(generateMarkerContent(item.name, item.note, item.img, item.type))
@@ -254,7 +282,7 @@ function loadPointerLabels(map, pointer: EntityPointer) {
         )
     }
 
-    let maxLocations =  getMaxBoundsPointer(pointer.pointerArray.map(item => item.position))
+    let maxLocations =  getMaxBoundsPointer(pointer.pointer_array.map((item: any) => item.position))
     // 取区间的 1/4 作为地图的边界
     let lngGap = (maxLocations.max[0] - maxLocations.min[0]) / 4
     let latGap = (maxLocations.max[1] - maxLocations.min[1]) / 4
@@ -263,46 +291,87 @@ function loadPointerLabels(map, pointer: EntityPointer) {
     let min = new AMap.LngLat(maxLocations.min[0] - lngGap, maxLocations.min[1] - latGap)
     let max = new AMap.LngLat(maxLocations.max[0] + lngGap, maxLocations.max[1] + latGap)
 
-    // 1. 多个点时，设置 bounds
-    if (pointer.pointerArray.length > 1){
+    // 1. 多个点时，设置边界
+    if (pointer.pointer_array.length > 1){
         let bounds = new AMap.Bounds(min, max)
         map.setBounds(bounds)
     }
     // 2. 一个点时，将其作为中心点
-    else if (pointer.pointerArray.length === 1){
-        console.log(pointer.pointerArray)
-        let centerLngLat = new AMap.LngLat(...pointer.pointerArray[0].position)
+    else if (pointer.pointer_array.length === 1){
+        console.log(pointer.pointer_array)
+        let centerLngLat = new AMap.LngLat(...pointer.pointer_array[0].position)
         map.setCenter(centerLngLat)  // 设置地图中心点坐标
     }
-    // 3.
+    // 3. 没有点时不做处理
     else {
 
     }
     /*
-                pointer.pointerArray.forEach((item, index) => {
+                pointer.pointer_array.forEach((item, index) => {
                     addMarker(map, item, index)
                 })*/
 }
 
-function addMarker(map, item: EntityPointerPoint, index: number) {
+function addMarker(map: any, item: EntityPointerPoint, index: number) {
     let marker = new AMap.Marker({
         position: item.position,
         draggable: true,
         content: generateMarkerContent(item.name, item.note, item.img, item.type, index),
     })
+    currentMarkers.value.push(marker) // 跟踪标记点以便清理
     map.add(marker)
 }
 
 watch(() => route.query.pointerId, newValue => {
-    window.map.clearInfoWindow() // 清除地图上的信息窗体
-    window.map.clearMap() // 删除所有 Marker
-    getPointerInfo(newValue)
+    clearAllMarkers(window.map) // 清除地图上的所有标记和聚合
+    if (newValue) {
+        getPointerInfo(newValue as string)
+    }
 })
 
 onUnmounted(() => {
-    window.map.clearInfoWindow() // 清除地图上的信息窗体
-    window.map.clearMap() // 删除所有 Marker
+    // 清除地图和数组中的所有标记点
+    currentMarkers.value.forEach(marker => {
+        if (window.map && marker) {
+            window.map.remove(marker)
+        }
+    })
+    currentMarkers.value = []
+    
+    // 清除聚合对象（如果存在）
+    if (cluster) {
+        cluster.setData([])
+        cluster = null
+    }
+    
+    if (window.map) {
+        window.map.clearInfoWindow() // 清除地图上的信息窗体
+        window.map.clearMap() // 删除所有标记点
+    }
 })
+
+// 综合清理函数，清除所有标记点和地图元素
+function clearAllMarkers(map: any) {
+    // 清除我们跟踪的标记点
+    currentMarkers.value.forEach(marker => {
+        if (marker && map) {
+            map.remove(marker)
+        }
+    })
+    currentMarkers.value = []
+    
+    // 清除聚合对象（如果存在）
+    if (cluster) {
+        cluster.setData([])
+        cluster = null
+    }
+    
+    // 清除地图上的所有覆盖物（包括标记点、折线等）
+    if (map) {
+        map.clearMap()
+        map.clearInfoWindow()
+    }
+}
 </script>
 
 <style lang="scss" scoped>

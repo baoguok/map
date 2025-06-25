@@ -122,20 +122,29 @@ import {useRoute} from "vue-router";
 import {generateMarkerContent} from "@/page/MyMapLib.ts";
 import SearchPanel from "@/page/SearchPanel.vue";
 
+// 添加 AMap 类型定义
+declare global {
+    interface Window {
+        map: any;
+    }
+}
+
 const store = useProjectStore()
 const route = useRoute()
 
 const MY_POSITION = [117.129533, 36.685668]
-let AMap = null
+let AMap: any = null
 
-let activeLineObj = ref(null)
+let activeLineObj = ref<any>(null)
 const isLoading = ref(false)
-const currentDragRouting = ref(null) // 当前导航路线，拖拽导航路径对象
+const currentDragRouting = ref<any>(null) // 当前导航路线，拖拽导航路径对象
 const positionPicked = ref({lng: 0, lat: 0})
 
+// 跟踪标记点以便正确清理
+const currentMarkers = ref<any[]>([])
 
 /**
- * SEARCH
+ * 搜索
  */
 const keyword = ref('')
 function chooseLocation(location: {name: string, location: number[], keyword: string}){
@@ -149,16 +158,16 @@ function chooseLocation(location: {name: string, location: number[], keyword: st
 
 
 /**
- * POINTERS
+ * 途经点
  */
 const pathPointers = ref<Array<EntityRoutePoint>>([]) // 对应点的范围数据
 watch(pathPointers, () => {
-    window.map.clearMap() // 删除地图上的所有标记
+    clearAllMarkers(window.map) // 删除地图上的所有标记
     loadLineLabels(window.map, pathPointers.value)
 }, {deep: true})
 
 /**
- * policy change
+ * 策略变更
  */
 const currentPolicy = ref(2) // 当前路径规则策略
 watch(currentPolicy, () => {
@@ -166,7 +175,7 @@ watch(currentPolicy, () => {
 })
 
 /**
- * FORM
+ * 表单
  */
 const isShowingEdit = ref(false)
 const refFormLine = ref()
@@ -191,7 +200,9 @@ const formLineRules = reactive<FormRules<EntityRoute>>({
 })
 
 watch(() => formLine.value.seasonsArray, newValue => {
-    formLine.value.seasons = newValue.join('、')
+    if (newValue) {
+        formLine.value.seasons = newValue.join('、')
+    }
 })
 
 
@@ -239,7 +250,7 @@ onMounted(() => {
             }
 
             // 地图选点操作
-            window.map.on('click', res => {
+            window.map.on('click', (res: any) => {
                 positionPicked.value = {
                     lng: res.lnglat.lng,
                     lat: res.lnglat.lat
@@ -255,7 +266,7 @@ onMounted(() => {
 
 
 /**
- * COMPUTED VALUE
+ * 计算值
  */
 const isEditingLineInfo = computed(() => {
     return !isNaN(Number(route.query.lineId))
@@ -274,7 +285,7 @@ function changePolicy(policy: number){
 }
 
 function submit() {
-    refFormLine.value.validate(valid => {
+    refFormLine.value.validate((valid: boolean) => {
         if (valid) {
 
             let tempJsonStr = JSON.stringify(pathPointers.value)
@@ -305,7 +316,7 @@ function routeModifySubmit() {
         return
     }
     formLine.value.policy = currentPolicy.value
-    let requestData = {}
+    let requestData: any = {}
     Object.assign(requestData, formLine.value)
     requestData.paths = Base64.encode(JSON.stringify(pathPointers.value))
     routeApi
@@ -327,7 +338,7 @@ function routeNewSubmit() {
         return
     }
     formLine.value.policy = currentPolicy.value
-    let requestData = {}
+    let requestData: any = {}
     Object.assign(requestData, formLine.value)
     requestData.paths = Base64.encode(JSON.stringify(pathPointers.value))
     routeApi
@@ -347,16 +358,20 @@ function getLineInfo() {
     if (route.query.lineId) {
         routeApi
             .detail({
-                id: route.query.lineId
+                id: route.query.lineId as string
             })
             .then(res => {
                 formLine.value = res.data
                 currentPolicy.value = res.data.policy
-                formLine.value.seasonsArray = formLine.value.seasons.split('、')
+                if (formLine.value.seasons) {
+                    formLine.value.seasonsArray = formLine.value.seasons.split('、')
+                }
                 activeLineObj.value = res.data
-                pathPointers.value = JSON.parse(Base64.decode(activeLineObj.value.paths))
-                loadLine(window.map, pathPointers.value)
-                loadLineLabels(window.map, pathPointers.value)
+                if (activeLineObj.value && activeLineObj.value.paths) {
+                    pathPointers.value = JSON.parse(Base64.decode(activeLineObj.value.paths))
+                    loadLine(window.map, pathPointers.value)
+                    loadLineLabels(window.map, pathPointers.value)
+                }
             })
     }
 }
@@ -364,15 +379,17 @@ function getLineInfo() {
 /**
  * 设置地图中心点：用户坐标
  */
-function setMapCenterToUserLocation(status, res) {
+function setMapCenterToUserLocation(status: string, res: any) {
     if (status === 'complete') {
-        let center = [res.position.lng, res.position.lat]
+        let center: [number, number] = [res.position.lng, res.position.lat]
         window.map.setCenter(center)
         addMarker(window.map, {
             position: center,
             name: '我',
-            note: ''
-        })
+            note: '',
+            img: '',
+            type: ''
+        }, 0)
     } else {
         console.log(res)
     }
@@ -380,24 +397,27 @@ function setMapCenterToUserLocation(status, res) {
 
 // 结束拾取坐标
 function pickLocationStop() {
-    map.off('click', this.showLocation)
+    if (window.map) {
+        window.map.off('click', this.showLocation)
+    }
 }
-// 打印 路线数据
+// 打印路线数据
 function printRoute() {
     console.log(JSON.stringify([...pathPointers.value].reverse()))
 }
 
 // 展示规划的路线
 function showLine() {
-    window.map.clearMap() // 删除地图上的所有标记
+    clearAllMarkers(window.map) // 删除地图上的所有标记
     if (currentDragRouting.value) {
         currentDragRouting.value.destroy() // 删除之前的路线
+        currentDragRouting.value = null
     }
     loadLine(window.map, pathPointers.value)
     loadLineLabels(window.map, pathPointers.value)
 }
 // 载入线路信息
-function loadLine(map, linePointers: Array<EntityRoutePoint>) {
+function loadLine(map: any, linePointers: Array<EntityRoutePoint>) {
     // 切换线路之前如果存在路线，销毁已存在的路线
     if (currentDragRouting.value) {
         currentDragRouting.value.destroy()
@@ -442,7 +462,7 @@ function loadLine(map, linePointers: Array<EntityRoutePoint>) {
         })
 
         // 添加途经点时
-        currentDragRouting.value.on('addway', res => {
+        currentDragRouting.value?.on('addway', (res: any) => {
             console.log(res,res.lnglat)
             if (res.lnglat){
                 positionPicked.value = {
@@ -453,7 +473,7 @@ function loadLine(map, linePointers: Array<EntityRoutePoint>) {
         })
 
         // 路线规划完成时
-        currentDragRouting.value.on('complete', res => {
+        currentDragRouting.value?.on('complete', (res: any) => {
             // console.log(currentDragRouting.value.getWays().toString())  // 除去起点终点的路径点
 
             // 路线规划完成后，返回的路线数据：设置距离、行驶时间
@@ -463,23 +483,23 @@ function loadLine(map, linePointers: Array<EntityRoutePoint>) {
             activeLineObj.value = {
                 name: '临时路线'
             }
-            formLine.value.distance = distance
-            formLine.value.time = time
+            formLine.value.distance = parseFloat(distance)
+            formLine.value.time = parseInt(time)
         })
 
         // 查询导航路径并开启拖拽导航
-        currentDragRouting.value.search()
+        currentDragRouting.value?.search()
     })
 }
 
-// 添加路线 label 线路信息
-function loadLineLabels(map, pathPointers: Array<EntityRoutePoint>) {
+// 添加路线标记线路信息
+function loadLineLabels(map: any, pathPointers: Array<EntityRoutePoint>) {
     pathPointers.forEach((item, index) => {
         addMarker(map, item, index)
     })
 }
 
-function addMarker(map, item: EntityRoutePoint, index: number) {
+function addMarker(map: any, item: EntityRoutePoint, index: number) {
     let marker= new AMap.Marker({
         position: item.position,
         title: item.note,
@@ -492,29 +512,57 @@ function addMarker(map, item: EntityRoutePoint, index: number) {
     marker.on('dragstart', handleMarkerDragging)
     marker.on('dragging', handleMarkerDragStart)
     marker.on('dragend', handleMarkerDragEnd)
-    // pathPointers.value.push(marker)
+    currentMarkers.value.push(marker) // 跟踪标记点以便清理
     map.add(marker)
 }
 
-function handleMarkerDragging(event){
+function handleMarkerDragging(event: any){
     // console.log(event)
     const markerIndex =  event.target._opts.extData.arrayIndex  // 在新建 marker 的时候提前定义的数据
     pathPointers.value[markerIndex].position = [event.lnglat.lng, event.lnglat.lat]
 }
-function handleMarkerDragStart(event){
+function handleMarkerDragStart(event: any){
     // console.log(event)
     const markerIndex =  event.target._opts.extData.arrayIndex  // 在新建 marker 的时候提前定义的数据
     pathPointers.value[markerIndex].position = [event.lnglat.lng, event.lnglat.lat]
 }
-function handleMarkerDragEnd(event){
+function handleMarkerDragEnd(event: any){
     // console.log(event)
     const markerIndex =  event.target._opts.extData.arrayIndex  // 在新建 marker 的时候提前定义的数据
     pathPointers.value[markerIndex].position = [event.lnglat.lng, event.lnglat.lat]
 }
 
+// 综合清理函数，清除所有标记点和地图元素
+function clearAllMarkers(map: any) {
+    // 清除我们跟踪的标记点
+    currentMarkers.value.forEach(marker => {
+        if (marker && map) {
+            map.remove(marker)
+        }
+    })
+    currentMarkers.value = []
+    
+    // 清除地图上的所有覆盖物（包括标记点、折线等）
+    if (map) {
+        map.clearMap()
+        map.clearInfoWindow()
+    }
+}
+
 onUnmounted(()=>{
+    // 清除地图和数组中的所有标记点
+    currentMarkers.value.forEach(marker => {
+        if (window.map && marker) {
+            window.map.remove(marker)
+        }
+    })
+    currentMarkers.value = []
+    
     currentDragRouting.value && currentDragRouting.value.destroy() // 销毁行程规划
-    window.map.clearInfoWindow() // 清除地图上的信息窗体
+    if (window.map) {
+        window.map.clearInfoWindow() // 清除地图上的信息窗体
+        window.map.clearMap() // 删除所有标记点
+    }
 })
 
 </script>

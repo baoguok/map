@@ -42,16 +42,21 @@ import {key_service, key_web_js} from "@/mapConfig.ts";
 import {generateMarkerContent} from "@/page/MyMapLib.ts";
 import SearchPanel from "@/page/SearchPanel.vue";
 
+// Type declarations for AMap
+declare global {
+    interface Window {
+        map: any;
+    }
+}
 
 const refCirclePanel = ref()
 
-const MY_POSITION = [117.129533, 36.685668]
-let AMap = null
+const MY_POSITION: [number, number] = [117.129533, 36.685668]
+let AMap: any = null
 
 const store = useProjectStore()
 const route = useRoute()
 const router = useRouter()
-
 
 const isLoading = ref(false)
 
@@ -62,12 +67,39 @@ interface EntityCircle {
     color?: string //
 }
 
+interface MapClickEvent {
+    lnglat: {
+        lng: number;
+        lat: number;
+    }
+}
+
+interface GeolocationResult {
+    position: {
+        lng: number;
+        lat: number;
+    }
+}
+
+interface MarkerEvent {
+    target: {
+        _opts: {
+            extData: {
+                arrayIndex: number;
+            }
+        }
+    };
+    lnglat: {
+        lng: number;
+        lat: number;
+    }
+}
+
 const circleData = ref<Array<EntityCircle>>([]) // 对应点的范围数据
 const positionPicked = ref({
     lng: 0,
     lat: 0,
 })
-const searchAddress = ref('')  // 地址搜索关键字
 const resultText = ref('')
 
 onMounted(() => {
@@ -81,7 +113,7 @@ onMounted(() => {
                 'AMap.Geolocation', // 定位
             ],
         })
-        .then(mapItem => {
+        .then((mapItem: any) => {
             AMap = mapItem
             window.map = new AMap.Map('container', {
                 center: MY_POSITION,
@@ -112,14 +144,14 @@ onMounted(() => {
             }
 
             // 地图选点操作
-            window.map.on('click', res => {
+            window.map.on('click', (res: MapClickEvent) => {
                 positionPicked.value = {
                     lng: res.lnglat.lng,
                     lat: res.lnglat.lat
                 }
             })
         })
-        .catch(e => {
+        .catch((e: any) => {
             console.log(e)
         })
 })
@@ -134,26 +166,29 @@ function chooseLocation(location: {name: string, location: number[], keyword: st
         lng: location.location[0],
         lat: location.location[1],
     }
-    window.map.setCenter(location.location)
+    if (window.map) {
+        window.map.setCenter(location.location)
+    }
 }
 
 // 设置地图中心点：用户坐标
-function setMapCenterToUserLocation(status, res){
+function setMapCenterToUserLocation(status: string, res: GeolocationResult){
     if (status === 'complete') {
-        let center = [res.position.lng, res.position.lat]
-        window.map.setCenter(center)
-        addMarker(window.map, {
-            position: center,
-            name: '我',
-            note: ''
-        })
+        let center: [number, number] = [res.position.lng, res.position.lat]
+        if (window.map) {
+            window.map.setCenter(center)
+            addMarker(window.map, {
+                center: center,
+                name: '我',
+                radius: 0
+            }, 0)
+        }
     } else {
         console.log(res)
     }
 }
 
-
-function addCircle(map, position: [number, number], borderColor: string = '#52c7f9', radius: number) {
+function addCircle(map: any, position: [number, number], borderColor: string = '#52c7f9', radius: number) {
     let circle = new AMap.Circle({
         center: position,         // 圆心位置
         radius: radius * 1000,    // 圆半径
@@ -166,7 +201,7 @@ function addCircle(map, position: [number, number], borderColor: string = '#52c7
     map.add(circle)
 }
 
-function addMarker(map, item: EntityCircle, index: number) {
+function addMarker(map: any, item: EntityCircle, index: number) {
     let marker = new AMap.Marker({
         position: item.center,
         draggable: true,
@@ -181,22 +216,23 @@ function addMarker(map, item: EntityCircle, index: number) {
     map.add(marker)
 }
 
-function handleMarkerDragging(event){
+function handleMarkerDragging(event: MarkerEvent){
     // console.log(event)
-    const markerIndex =  event.target._opts.extData.arrayIndex  // 在新建 marker 的时候提前定义的数据
-    circleData.value[markerIndex].center = [event.lnglat.lng, event.lnglat.lat]
-}
-function handleMarkerDragStart(event){
-    // console.log(event)
-    const markerIndex =  event.target._opts.extData.arrayIndex  // 在新建 marker 的时候提前定义的数据
-    circleData.value[markerIndex].center = [event.lnglat.lng, event.lnglat.lat]
-}
-function handleMarkerDragEnd(event){
-    // console.log(event)
-    const markerIndex =  event.target._opts.extData.arrayIndex  // 在新建 marker 的时候提前定义的数据
+    const markerIndex = event.target._opts.extData.arrayIndex  // 在新建 marker 的时候提前定义的数据
     circleData.value[markerIndex].center = [event.lnglat.lng, event.lnglat.lat]
 }
 
+function handleMarkerDragStart(event: MarkerEvent){
+    // console.log(event)
+    const markerIndex = event.target._opts.extData.arrayIndex  // 在新建 marker 的时候提前定义的数据
+    circleData.value[markerIndex].center = [event.lnglat.lng, event.lnglat.lat]
+}
+
+function handleMarkerDragEnd(event: MarkerEvent){
+    // console.log(event)
+    const markerIndex = event.target._opts.extData.arrayIndex  // 在新建 marker 的时候提前定义的数据
+    circleData.value[markerIndex].center = [event.lnglat.lng, event.lnglat.lat]
+}
 
 watch(circleData, newValue => {
     if (window.map){
@@ -219,11 +255,12 @@ watch(circleData, newValue => {
 }, {deep: true})
 
 onUnmounted(() => {
-    window.map.clearMap() // 删除地图上的所有标记
-    // window.map.destroy() // 销毁地图，释放内存
-    // window.map = null
+    if (window.map) {
+        window.map.clearMap() // 删除地图上的所有标记
+        // window.map.destroy() // 销毁地图，释放内存
+        // window.map = null
+    }
 })
-
 
 </script>
 

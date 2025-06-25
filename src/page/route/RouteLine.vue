@@ -49,22 +49,32 @@ const MY_POSITION = [117.129533, 36.685668]
 let AMap = null
 let currentDragRouting = null  // 当前导航路线
 
+// 添加 AMap 类型定义
+declare global {
+    interface Window {
+        map: any;
+    }
+}
 
 const store = useProjectStore()
 const route = useRoute()
 const router = useRouter()
 
 const isLoading = ref(false)
-const activeLineObj = ref<EntityRoute>(null) // 当前 Line 对象
+const activeLineObj = ref<EntityRoute | null>(null) // 当前路线对象
 
 const isMarkerShowed = ref(true)
-const currentMarkers = ref([]) // 地图上的 markers
+const currentMarkers = ref<any[]>([]) // 地图上的标记点
 
-// Driving Info
+// 驾驶信息
 const drivingInfo = ref({
     distance: '',
     time: ''
 })
+
+// 跟踪天气请求以便清理
+const weatherRequests = ref<any[]>([])
+const isComponentMounted = ref(true)
 
 onMounted(() => {
     AMapLoader
@@ -87,7 +97,7 @@ onMounted(() => {
             window.map.addControl(new AMap.ToolBar())
             window.map.addControl(new AMap.Scale())
             if (route.query.lineId) {
-                getLineInfo(route.query.lineId!)
+                getLineInfo(route.query.lineId as string)
             }
         })
         .catch(e => {
@@ -107,6 +117,9 @@ function toggleLabel(){
     isMarkerShowed.value = !isMarkerShowed.value
 }
 function openInGaodeApp(){
+    if (!activeLineObj.value || !activeLineObj.value.pathArray) {
+        return
+    }
     let originLnglat = activeLineObj.value.pathArray[0].position // [lng, lat]
     let destLnglat = activeLineObj.value.pathArray[activeLineObj.value.pathArray.length - 1].position // [lng, lat]
     window.map.plugin('AMap.Driving', () => {
@@ -117,7 +130,7 @@ function openInGaodeApp(){
         currentDriving.search(
             new AMap.LngLat(...originLnglat),
             new AMap.LngLat(...destLnglat),
-            function (status, result) {
+            function (status: string, result: any) {
                 // result 即是对应的驾车导航信息，相关数据结构文档请参考
                 // https://lbs.amap.com/api/javascript-api/reference/route-search#m_DrivingResult
                 if (status === 'complete') {
@@ -135,7 +148,7 @@ function openInGaodeApp(){
 }
 
 
-// change line
+// 切换路线
 function changeLine(lineId: number){
     router.push({
         name: 'RouteLine',
@@ -155,9 +168,11 @@ function getLineInfo(lineId: string) {
         })
         .then(res => {
             activeLineObj.value = res.data
-            activeLineObj.value.pathArray = JSON.parse(Base64.decode(activeLineObj.value.paths))
-            loadLine(window.map, activeLineObj.value)
-            loadLineLabels(window.map, activeLineObj.value)
+            if (activeLineObj.value && activeLineObj.value.paths) {
+                activeLineObj.value.pathArray = JSON.parse(Base64.decode(activeLineObj.value.paths))
+                loadLine(window.map, activeLineObj.value)
+                loadLineLabels(window.map, activeLineObj.value)
+            }
         })
 }
 
@@ -168,7 +183,11 @@ function resizeMap() {
 }
 
 // 载入路线信息
-function loadLine(map, line: EntityRoute) {
+function loadLine(map: any, line: EntityRoute) {
+    // 清除现有标记点
+    currentMarkers.value.forEach(marker => {
+        map.remove(marker)
+    })
     currentMarkers.value = []
     isMarkerShowed.value = true
 
@@ -177,9 +196,15 @@ function loadLine(map, line: EntityRoute) {
         currentDragRouting.destroy()
         currentDragRouting = null
     }
+    
+    if (!line.pathArray || line.pathArray.length === 0) {
+        console.warn('路线数据为空:', line)
+        return
+    }
+    
     map.plugin('AMap.DragRoute', () => {
         // path 是驾车导航的起、途径和终点，官方建议最多放置 16个 途经点，以保证良好体验
-        let path = line.pathArray.map (item => item.position)
+        let path = line.pathArray!.map (item => item.position)
         currentDragRouting = new AMap.DragRoute(map, path, line.policy, {
             startMarkerOptions: {
                 offset: new AMap.Pixel(-13, -43),
@@ -214,7 +239,7 @@ function loadLine(map, line: EntityRoute) {
         })
 
         // 路线规划完成时
-        currentDragRouting.on('complete', res => {
+        currentDragRouting.on('complete', (res: any) => {
             // 路线规划完成后，返回的路线数据：设置距离、行驶时间
             let lineData = res.data.routes[0]
             let distance =  (lineData.distance / 1000).toFixed(1) // m -> km
@@ -222,8 +247,10 @@ function loadLine(map, line: EntityRoute) {
 
             fetchWeatherFromRoute(lineData.steps)
 
-            activeLineObj.value.distance = distance
-            activeLineObj.value.time = time
+            if (activeLineObj.value) {
+                activeLineObj.value.distance = parseFloat(distance)
+                activeLineObj.value.time = parseInt(time)
+            }
 
             drivingInfo.value.distance = distance
             drivingInfo.value.time = time
@@ -234,11 +261,24 @@ function loadLine(map, line: EntityRoute) {
     })
 }
 
-function fetchWeatherFromRoute(steps){
+function fetchWeatherFromRoute(steps: any){
+    // 如果组件正在卸载，不获取天气
+    if (!isComponentMounted.value) {
+        return
+    }
+    
+    // 取消任何现有的天气请求
+    weatherRequests.value.forEach(request => {
+        if (request && request.cancel) {
+            request.cancel()
+        }
+    })
+    weatherRequests.value = []
+    
     let districtsMap = new Map()
-    steps.forEach(item => {
-        item.cities && item.cities.forEach(city => {
-            city.districts.forEach(district => {
+    steps.forEach((item: any) => {
+        item.cities && item.cities.forEach((city: any) => {
+            city.districts.forEach((district: any) => {
                 if (districtsMap.has(district.adcode)){
 
                 } else {
@@ -248,20 +288,31 @@ function fetchWeatherFromRoute(steps){
         })
     })
 
-    let weatherRequestArray = []
+    let weatherRequestArray: any[] = []
     districtsMap.forEach((value,key) => {
-        weatherRequestArray.push(getWeather(key))
+        const request = getWeather(key)
+        weatherRequests.value.push(request)
+        weatherRequestArray.push(request)
     })
 
     axios
         .all(weatherRequestArray)
         .then(response => {
+            // 检查组件是否仍然挂载后再更新
+            if (!isComponentMounted.value) {
+                return
+            }
             let weatherString = '\n\n### 途经地天气信息\n\n'
             response.forEach((res, index) => {
                 let weatherData = res.data.lives[0]
                 weatherString = weatherString.concat(`${index + 1}. ${weatherData.province}-${weatherData.city}: ${weatherData.temperature}℃ | ${weatherData.humidity}%RH, ${weatherData.weather}\n`)
             })
-            activeLineObj.value.note = activeLineObj.value.note.concat(weatherString)
+            if (activeLineObj.value) {
+                activeLineObj.value.note = activeLineObj.value.note.concat(weatherString)
+            }
+        })
+        .catch(error => {
+            console.log('天气请求失败:', error)
         })
 }
 
@@ -275,13 +326,16 @@ function getWeather(adcode: string){
     })
 }
 
-// 添加路线 Label
-function loadLineLabels(map, line: EntityRoute) {
+// 添加路线标记
+function loadLineLabels(map: any, line: EntityRoute) {
+    if (!line.pathArray) {
+        return
+    }
     line.pathArray.forEach((item, index) => {
         addMarker(map, item, index)
     })
 }
-function addMarker(map, item: EntityRoutePoint, index: number) {
+function addMarker(map: any, item: EntityRoutePoint, index: number) {
     let marker = new AMap.Marker({
         position: item.position,
         title: item.note,
@@ -292,22 +346,52 @@ function addMarker(map, item: EntityRoutePoint, index: number) {
     map.add(marker)
 }
 
-// float route list
-const isRouteListShowed = ref(true) // route list 是否显示
+// 浮动路线列表
+const isRouteListShowed = ref(true) // 路线列表是否显示
 
 
 watch(()=>route.query.lineId, newValue => {
+    // 清除现有标记点
+    currentMarkers.value.forEach(marker => {
+        window.map.remove(marker)
+    })
+    currentMarkers.value = []
+    
     currentDragRouting && currentDragRouting.destroy() // 销毁行程规划
     window.map.clearInfoWindow() // 清除地图上的信息窗体
-    window.map.clearMap() // 删除所有 Marker
-    getLineInfo(newValue)
+    window.map.clearMap() // 删除所有标记点
+    
+    if (newValue) {
+        getLineInfo(newValue as string)
+    }
 })
 
 onUnmounted(() => {
+    // 设置标志以防止新操作
+    isComponentMounted.value = false
+    
+    // 取消任何待处理的天气请求
+    weatherRequests.value.forEach(request => {
+        if (request && request.cancel) {
+            request.cancel()
+        }
+    })
+    weatherRequests.value = []
+    
+    // 清除标记点
+    currentMarkers.value.forEach(marker => {
+        if (window.map && marker) {
+            window.map.remove(marker)
+        }
+    })
+    currentMarkers.value = []
+    
     currentDragRouting && currentDragRouting.destroy() // 销毁行程规划
-    window.map.clearInfoWindow() // 清除地图上的信息窗体
-    window.map.clearMap() // 删除所有 Marker
-    window.map.destroy() // 销毁地图，释放内存
+    if (window.map) {
+        window.map.clearInfoWindow() // 清除地图上的信息窗体
+        window.map.clearMap() // 删除所有标记点
+        window.map.destroy() // 销毁地图，释放内存
+    }
     window.map = null
 })
 </script>
