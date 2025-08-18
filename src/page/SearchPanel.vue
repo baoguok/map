@@ -66,7 +66,7 @@ const isShowResultPanel = ref(true)
 <template>
     <!-- 搜索面板 -->
     <div class="search-panel card mb-1">
-        <ElForm inline @submit="search" size="small">
+        <ElForm inline @submit.prevent="search" size="small">
             <ElFormItem class="mb-0" label="搜索地址">
                 <ElInput style="width: 180px" placeholder="输入较完整的地址" @keydown.enter="search" v-model="searchAddress"></ElInput>
             </ElFormItem>
