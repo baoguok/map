@@ -38,6 +38,11 @@
 <!--                <img :src="qrImg" alt="">-->
 <!--                <p>扫一扫，打开该页面</p>-->
 <!--            </div>-->
+
+        </div>
+
+        <div class="footer">
+            <slot name="footer"/>
         </div>
     </div>
 </template>
@@ -198,6 +203,10 @@ i{
     p{
         font-size: $fz-small;
     }
+}
+
+.footer{
+    padding: 10px 20px;
 }
 
 @media (max-width: $screen-width-threshold) {

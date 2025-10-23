@@ -1,12 +1,18 @@
 <template>
     <div :class="['detail', 'card', {'closed': !showContent}, {'center': store.isInPortraitMode}]">
         <div class="title">
-            <h1>{{line.name}} <i @click="toggleContent" v-if="showContent" class="ArrowDown"></i>
+            <div class="title-name">{{line.name}} <i @click="toggleContent" v-if="showContent" class="ArrowDown"></i>
                 <i @click="toggleContent" v-else class="ArrowUp"></i>
-            </h1>
+            </div>
             <a v-if="line.video_link" target="_blank" class="video-link" :href="line.video_link">
                 <ElIcon size="20"><VideoCameraFilled/></ElIcon>
             </a>
+            <div class="collapse-btn">
+                <ElButton size="small" @click="toggleContent">
+                    <ElIcon v-if="showContent" ><ArrowUp/></ElIcon>
+                    <ElIcon v-else><ArrowDown/></ElIcon>
+                </ElButton>
+            </div>
         </div>
 
         <div class="content" v-if="showContent">
@@ -34,6 +40,9 @@
                 </div>
                 <div v-if="line.nickname" class="info">
                     <p class="info-title">创建用户</p><p class="info-value">{{line.nickname}}</p>
+                </div>
+                <div v-if="line.date_init" class="info">
+                    <p class="info-title">创建时间</p><p class="info-value">{{dateFormatter(new Date(line.date_init), 'yyyy/MM/dd hh:mm:ss')}}</p>
                 </div>
             </div>
             <div class="note markdown" :style="`max-height: ${height}px`" v-if="line.note" v-html="contentHtml"></div>
@@ -68,6 +77,7 @@ import {useProjectStore} from "@/pinia";
 import {useRoute, useRouter} from "vue-router";
 import {computed, onMounted, ref} from "vue";
 import {EntityRoute} from "@/page/route/Route.ts";
+import { dateFormatter } from "@/utility";
 
 const props = defineProps<{
     line: EntityRoute,
@@ -126,6 +136,10 @@ i{
         font-size: 1rem;
         color: $text-main;
         border-bottom: 1px solid $border-normal;
+        .title-name{
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
         .video-link{
             display: block;
             position: absolute;
@@ -137,6 +151,11 @@ i{
             }
             &:active{
             }
+        }
+        .collapse-btn{
+            position: absolute;
+            left: 0;
+            bottom: 0;
         }
     }
     &.closed{

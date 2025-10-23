@@ -36,9 +36,8 @@
                 <div class="form-title">
                     <div class="collapse-btn">
                         <ElButton size="small" @click="toggleEditPanel">
-                            <i v-if="isShowingEdit" class="ArrowUp"></i>
-                            <i v-else class="ArrowDown"></i>
-                            折叠面板
+                            <ElIcon v-if="isShowingEdit" ><ArrowUp/></ElIcon>
+                            <ElIcon v-else><ArrowDown/></ElIcon>
                         </ElButton>
                     </div>
                     <div class="title">
