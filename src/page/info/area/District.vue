@@ -1,8 +1,12 @@
 <template>
     <div class="map-container">
-        <PointerDetailPanel :pointer="pointerInfo"/>
+        <PointerDetailPanel :pointer="pointerInfo" v-if="isShowToolPanel">
+            <template #footer>
+                <ElButton size="small" type="primary" icon="Hide" @click="hideEverythingForScreenshot">截图用，隐藏面板</ElButton>
+            </template>
+        </PointerDetailPanel>
         <div id="container" :style="`height: ${store.windowInsets.height}px`"></div>
-        <div class="card input-panel">
+        <div class="card input-panel" v-if="isShowToolPanel">
             <ElForm inline size="small">
                 <ElFormItem class="mb-0 mr-1">
                     <ElInput placeholder="区域编码" v-model="pointerInfo.adcode"/>
@@ -30,6 +34,8 @@ import {key_service, key_web_js} from "@/mapConfig.ts";
 const store = useProjectStore()
 const router = useRouter()
 const route = useRoute()
+
+const isShowToolPanel = ref(true)
 
 // 显示地图行政区的深度
 const DEPTH = {
@@ -67,6 +73,8 @@ const pointerInfo = ref({
 })
 let tempColorArray = []
 
+const markers = ref<Array<any>>([])
+
 
 onMounted(() => {
     if (route.query.adcode){
@@ -98,7 +106,9 @@ onMounted(() => {
             map = new AMap.Map('container', {
                 center: [117.129533, 36.685668],
                 zoom: 9, // 缩放级别
-                mapStyle: 'amap://styles/whitesmoke'
+                mapStyle: 'amap://styles/whitesmoke',
+                // mapStyle: 'amap://styles/darkblue',
+
             })
 
 
@@ -172,6 +182,7 @@ function showDistrictOfAdcode(){
 
 // 获取坐标值的地理信息
 function showDistrictInfoOf(lnglat){
+    isShowToolPanel.value = true
     axios({
         url: 'https://restapi.amap.com/v3/geocode/regeo?parameters',
         params: {
@@ -312,6 +323,7 @@ function showDistrictBounds(locationName){
 
             locationInfo.districtList.forEach(item => {
                 addMarker(map, item)
+                markers.value.push(item)
             })
 
         } else {
@@ -333,10 +345,12 @@ function showDistrictBounds(locationName){
                 console.log(locationInfo.name)
                 locationInfo.districtList[0].districtList.forEach(item => {
                     addMarker(map, item)
+                    markers.value.push(item)
                 })
             } else { // 普通城市
                 locationInfo.districtList.forEach(item => {
                     addMarker(map, item)
+                    markers.value.push(item)
                 })
             }
 
@@ -408,6 +422,15 @@ function addMarker(map, item) {
                </div>`,
     })
     map.add(marker)
+    markers.value.push(marker)
+}
+
+function hideEverythingForScreenshot(){
+    markers.value.forEach(item => {
+        map.remove(item)
+    })
+    markers.value = []
+    isShowToolPanel.value = false
 }
 
 onUnmounted(() => {
