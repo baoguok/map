@@ -1,6 +1,6 @@
 <template>
     <div class="logo-container" :style="`height: ${height}px`">
-        <div :class="['logo', {narrow: store.navMenuIsClosed}]" @click="handleCollapseToggle">
+        <div :class="['logo', {narrow: store.isNavMenuFold}]" @click="handleCollapseToggle">
             <img src="../assets/logo.png" alt="LOGO">
         </div>
     </div>
@@ -8,7 +8,7 @@
 </template>
 
 <script lang="ts" setup>
-import {useProjectStore} from "@/pinia.ts";
+import {useProjectStore} from "@/store.ts";
 
 const store = useProjectStore()
 
@@ -19,11 +19,11 @@ withDefaults(defineProps<{
 })
 
 function handleCollapseToggle() {
-    if (innerHeight < innerWidth){
-        store.navMenuIsClosed = !store.navMenuIsClosed
-        store.navWidth = store.navMenuIsClosed ? 64 : 200
+    if (store.isInPortraitMode){
+        store.isShowFloatingMenuBtn = !store.isShowFloatingMenuBtn
     } else {
-        store.isShowingMenuToggleBtn = !store.isShowingMenuToggleBtn
+        store.isNavMenuFold = !store.isNavMenuFold
+        store.navWidth = store.isNavMenuFold ? 64 : 200
     }
 }
 </script>

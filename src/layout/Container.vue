@@ -6,7 +6,7 @@
 </template>
 
 <script setup lang="ts">
-import {useProjectStore} from "../pinia";
+import {useProjectStore} from "../store.ts";
 const store = useProjectStore()
 
 const props = withDefaults(defineProps<{

@@ -6,7 +6,7 @@
             @open="handleOpen"
             @close="handleClose"
             :unique-opened="false"
-            :collapse="store.navMenuIsClosed"
+            :collapse="store.isNavMenuFold"
             :collapse-transition="false"
         >
             <template v-for="( submenu, index ) in menus">
@@ -56,7 +56,7 @@ import {FIXED_ROUTES} from "../router"
 import  {getAuthorization} from "@/utility";
 import {onMounted, ref, watch} from "vue";
 import {useRoute, useRouter} from "vue-router";
-import {useProjectStore} from "@/pinia.ts";
+import {useProjectStore} from "@/store.ts";
 
 const store = useProjectStore()
 
@@ -103,6 +103,11 @@ function handleMenu(key) {
     // 处理导航点击
     if (route.path !== key) {
         router.push(key);
+    }
+
+    // 如果是在移动端，则折叠导航菜单
+    if (store.isInPortraitMode) {
+        store.isShowFloatingMenuBtn = true
     }
 }
 

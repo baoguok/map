@@ -59,7 +59,7 @@
 import {Base64} from "js-base64";
 import {dateFormatter} from "@/utility";
 import axios from "axios";
-import {useProjectStore} from "@/pinia";
+import {useProjectStore} from "@/store.ts";
 import {onMounted, ref} from "vue";
 import {useRoute, useRouter} from "vue-router";
 import {EntityRoute} from "@/page/route/Route.ts";

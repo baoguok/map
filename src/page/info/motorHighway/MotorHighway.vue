@@ -6,7 +6,7 @@
 
 <script lang="ts" setup>
 import AMapLoader from '@amap/amap-jsapi-loader';
-import {useProjectStore} from "@/pinia";
+import {useProjectStore} from "@/store.ts";
 import {onMounted, onUnmounted, ref} from "vue";
 import {key_web_js} from "@/mapConfig.ts";
 

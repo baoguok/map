@@ -28,7 +28,7 @@ import {useRoute} from "vue-router";
 import {EntityPointer} from "@/page/pointer/Pointer.ts";
 const route = useRoute()
 
-import {useProjectStore} from "@/pinia";
+import {useProjectStore} from "@/store.ts";
 const store = useProjectStore()
 
 const emit = defineEmits(['chosePointer'])

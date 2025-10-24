@@ -1,11 +1,13 @@
 <template>
     <ElContainer>
         <ElContainer>
+
+            <!-- 悬浮菜单按钮 -->
             <transition
-                enter-active-class="animate__bounceInDown"
-                leave-active-class="animate__bounceOutUp"
+                enter-active-class="animate__bounceInUp"
+                leave-active-class="animate__bounceOutDown"
             >
-                <div v-show="store.isShowingMenuToggleBtn" class="menu-btn animate__animated " @click="toggleMenu">
+                <div v-show="store.isShowFloatingMenuBtn" class="menu-btn animate__animated " @click="toggleMenu">
                     <img src="../assets/logo.png" alt="logo">
                 </div>
             </transition>
@@ -14,7 +16,7 @@
                 enter-active-class="animate__faster animate__slideInLeft"
                 leave-active-class="animate__faster animate__slideOutRight"
             >
-                <Aside class="animate__animated" v-show="!store.isShowingMenuToggleBtn"/>
+                <Aside class="animate__animated" v-show="!store.isShowFloatingMenuBtn"/>
             </transition>
             <ElContainer>
                 <ElMain>
@@ -29,13 +31,13 @@
 
 <script lang="ts" setup>
 import Aside from "./Aside.vue";
-import {useProjectStore} from "@/pinia.ts";
+import {useProjectStore} from "@/store.ts";
 import Container from "@/layout/Container.vue";
 
 const store = useProjectStore()
 
 function toggleMenu() {
-    store.isShowingMenuToggleBtn = !store.isShowingMenuToggleBtn
+    store.isShowFloatingMenuBtn = !store.isShowFloatingMenuBtn
 }
 </script>
 
@@ -53,7 +55,7 @@ function toggleMenu() {
     overflow: hidden;
     padding: 6px;
     position: fixed;
-    top: 10px;
+    bottom: 10px;
     left: 10px;
     height: $width-float-btn;
     width: $width-float-btn;

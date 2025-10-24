@@ -24,7 +24,7 @@ import AMapLoader from '@amap/amap-jsapi-loader'
 import axios from "axios";
 import PointerDetailPanel from "@/page/pointer/components/PointerDetailPanel.vue";
 import {adcodeMap} from './adcodeMap'
-import {useProjectStore} from "@/pinia";
+import {useProjectStore} from "@/store.ts";
 
 import {onMounted, onUnmounted, ref, watch} from "vue";
 import {useRoute, useRouter} from "vue-router";

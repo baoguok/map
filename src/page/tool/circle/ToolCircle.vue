@@ -35,7 +35,7 @@
 import AMapLoader from '@amap/amap-jsapi-loader'
 import CirclePanel from "@/page/tool/circle/components/CirclePanel.vue"
 import axios from "axios";
-import {useProjectStore} from "@/pinia";
+import {useProjectStore} from "@/store.ts";
 import {useRoute, useRouter} from "vue-router";
 import {onMounted, onUnmounted, ref, watch} from "vue";
 import {key_service, key_web_js} from "@/mapConfig.ts";

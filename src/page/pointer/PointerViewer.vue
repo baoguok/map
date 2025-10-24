@@ -1,10 +1,11 @@
 <template>
     <div class="map-container">
-        <div class="button-float btn-router-list"
-             @click="isPointerListShowed = true"
-             v-if="!isPointerListShowed && store.isInPortraitMode">
-            <i class="el-icon-tickets"></i>
-        </div>
+        <FloatingButton
+            :show="!isPointerListShowed && store.isInPortraitMode"
+            icon-class="el-icon-tickets"
+            custom-class="btn-router-list"
+            :position="{ top: 20, left: 280 }"
+            @click="isPointerListShowed = true" />
 
         <!-- 点图列表 -->
         <div class="float-route-list-panel" v-loading="isLoading" v-if="isPointerListShowed">
@@ -28,12 +29,13 @@
 <script lang="ts" setup>
 import AMapLoader from '@amap/amap-jsapi-loader'
 import PointerDetailPanel from "./components/PointerDetailPanel.vue"
+import FloatingButton from "@/layout/FloatingButton.vue"
 import {key_web_js} from "@/mapConfig";
 import pointerApi from "@/api/pointerApi";
 
 import {Base64} from "js-base64"
 import PointerListPanel from "./components/PointerListPanel.vue";
-import {useProjectStore} from "@/pinia";
+import {useProjectStore} from "@/store.ts";
 import {dateFormatter} from "@/utility";
 import {EntityPointer, EntityPointerPoint} from "@/page/pointer/Pointer.ts";
 import {generateMarkerContent, getMaxBoundsPointer} from "@/page/MyMapLib.ts";
@@ -220,11 +222,11 @@ function resizeMap() {
 function loadPointerLabels(map: any, pointer: EntityPointer) {
     // 清除现有标记点和聚合
     clearAllMarkers(map)
-    
+
     if (!pointer.pointer_array || pointer.pointer_array.length === 0) {
         return
     }
-    
+
     let pointers = pointer.pointer_array.map((item: any) => {
                                             item.weight = 1
                                             item.lnglat = item.position
@@ -337,13 +339,13 @@ onUnmounted(() => {
         }
     })
     currentMarkers.value = []
-    
+
     // 清除聚合对象（如果存在）
     if (cluster) {
         cluster.setData([])
         cluster = null
     }
-    
+
     if (window.map) {
         window.map.clearInfoWindow() // 清除地图上的信息窗体
         window.map.clearMap() // 删除所有标记点
@@ -359,13 +361,13 @@ function clearAllMarkers(map: any) {
         }
     })
     currentMarkers.value = []
-    
+
     // 清除聚合对象（如果存在）
     if (cluster) {
         cluster.setData([])
         cluster = null
     }
-    
+
     // 清除地图上的所有覆盖物（包括标记点、折线等）
     if (map) {
         map.clearMap()
@@ -377,11 +379,6 @@ function clearAllMarkers(map: any) {
 <style lang="scss" scoped>
 @import "../../scss/plugin";
 
-.btn-router-list{
-    position: absolute;
-    top: 20px;
-    left: 280px;
-}
 
 .map-container {
     position: relative
@@ -400,10 +397,10 @@ function clearAllMarkers(map: any) {
         left: 50%;
         transform: translateX(-50%);
     }
-    .btn-router-list{
-        left: auto;
-        top: 10px;
-        right: 10px;
+    :deep(.btn-router-list){
+        left: auto !important;
+        top: 10px !important;
+        right: 10px !important;
     }
 }
 

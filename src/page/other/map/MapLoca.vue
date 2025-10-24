@@ -9,7 +9,7 @@
 import AMapLoader from '@amap/amap-jsapi-loader'
 import GEO_PROVINCE_DATA from './province.json'
 import {key_web_js} from "@/mapConfig";
-import {useProjectStore} from "@/pinia";
+import {useProjectStore} from "@/store";
 
 let AMap = null
 

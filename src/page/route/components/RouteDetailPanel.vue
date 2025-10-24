@@ -73,7 +73,7 @@
 // import * as QRCode from "../../../lib/qr.js"
 import {policyMap} from "@/page/route/DrivingPolicy"
 import {marked} from "marked";
-import {useProjectStore} from "@/pinia";
+import {useProjectStore} from "@/store.ts";
 import {useRoute, useRouter} from "vue-router";
 import {computed, onMounted, ref} from "vue";
 import {EntityRoute} from "@/page/route/Route.ts";

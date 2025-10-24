@@ -90,7 +90,7 @@ import {key_service, key_web_js} from "@/mapConfig";
 import axios from "axios";
 import pointerApi from "@/api/pointerApi";
 import {Base64} from "js-base64";
-import {useProjectStore} from "@/pinia";
+import {useProjectStore} from "@/store.ts";
 import {getAuthorization} from "@/utility";
 import {useRoute} from "vue-router";
 import {computed, onMounted, onUnmounted, reactive, ref, watch} from "vue";

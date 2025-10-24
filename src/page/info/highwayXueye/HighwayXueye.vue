@@ -17,7 +17,7 @@
 import AMapLoader from '@amap/amap-jsapi-loader'
 const MAP_CENTER = [117.582719, 36.42146]
 import RouteDetailPanel from "@/page/route/components/RouteDetailPanel.vue";
-import {useProjectStore} from "@/pinia";
+import {useProjectStore} from "@/store.ts";
 import {onMounted, onUnmounted, ref} from "vue";
 import {key_web_js} from "@/mapConfig.ts";
 import {generateMarkerContent} from "@/page/MyMapLib.ts";

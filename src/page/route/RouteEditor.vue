@@ -112,7 +112,7 @@ import RouteEditPanel from "@/page/route/components/RouteEditPanel.vue";
 import {key_web_js} from "@/mapConfig";
 import {Base64} from "js-base64";
 
-import {useProjectStore} from "@/pinia";
+import {useProjectStore} from "@/store.ts";
 import routeApi from "@/api/routeApi";
 import {computed, onMounted, onUnmounted, reactive, ref, watch} from "vue";
 import {EntityRoute, EntityRoutePoint} from "@/page/route/Route.ts";
@@ -540,7 +540,7 @@ function clearAllMarkers(map: any) {
         }
     })
     currentMarkers.value = []
-    
+
     // 清除地图上的所有覆盖物（包括标记点、折线等）
     if (map) {
         map.clearMap()
@@ -556,7 +556,7 @@ onUnmounted(()=>{
         }
     })
     currentMarkers.value = []
-    
+
     currentDragRouting.value && currentDragRouting.value.destroy() // 销毁行程规划
     if (window.map) {
         window.map.clearInfoWindow() // 清除地图上的信息窗体

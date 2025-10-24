@@ -1,9 +1,9 @@
 <template>
     <div :class="['detail', 'card', {'closed': !showContent}, {'center': store.isInPortraitMode}]">
         <div class="title">
-            <h1>{{pointer.name}} <i @click="toggleContent" v-if="showContent" class="ArrowDown"></i>
+            <div class="title-name">{{pointer.name}} <i @click="toggleContent" v-if="showContent" class="ArrowDown"></i>
                 <i @click="toggleContent" v-else class="ArrowUp"></i>
-            </h1>
+            </div>
             <a v-if="pointer.video_link" target="_blank" class="video-link" :href="pointer.video_link">
                 <ElIcon size="20"><VideoCameraFilled/></ElIcon>
             </a>
@@ -50,7 +50,7 @@
 <script lang="ts" setup>
 // import QRCode from "./qr.js"
 import {marked} from "marked";
-import {useProjectStore} from "@/pinia";
+import {useProjectStore} from "@/store.ts";
 import {EntityPointer} from "@/page/pointer/Pointer.ts";
 import {computed, onMounted, ref} from "vue";
 import {useRouter} from "vue-router";
@@ -117,6 +117,10 @@ i{
         font-size: 1rem;
         color: $text-main;
         border-bottom: 1px solid $border-normal;
+        .title-name{
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
         .video-link{
             display: block;
             position: absolute;

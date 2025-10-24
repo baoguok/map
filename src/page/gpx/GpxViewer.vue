@@ -87,7 +87,7 @@ import ICON from "@/assets/icons";
 
 import Moment from "moment"
 import {dateFormatter, downloadBase64File} from "@/utility";
-import {useProjectStore} from "@/pinia";
+import {useProjectStore} from "@/store.ts";
 import {computed, onMounted, onUnmounted, ref, watch} from "vue";
 import {useRoute, useRouter} from "vue-router";
 

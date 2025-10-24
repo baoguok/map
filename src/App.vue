@@ -12,7 +12,7 @@
 <script lang="ts" setup>
 
 import {onMounted, ref} from "vue";
-import {useProjectStore} from "@/pinia.ts";
+import {useProjectStore} from "@/store.ts";
 import {getAuthorization} from "@/utility.ts";
 
 const store = useProjectStore()

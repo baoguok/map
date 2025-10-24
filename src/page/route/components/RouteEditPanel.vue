@@ -8,7 +8,7 @@ import {ElMessage} from "element-plus";
 import {getUploadToken} from "@/api/fileApi.ts";
 import {nextTick, onMounted, onUnmounted, ref, watch} from "vue";
 import {EntityRoutePoint} from "@/page/route/Route.ts";
-import {useProjectStore} from "@/pinia.ts";
+import {useProjectStore} from "@/store.ts";
 
 const pointerName = ref('') // 当前点的地名
 const pointerNote = ref('') // 标记note

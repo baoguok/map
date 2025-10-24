@@ -3,9 +3,9 @@
               :style="`min-height: ${heightAside}px`"
               :width="`${store.navWidth}px`">
        <div class="navbar">
-           <logo :height="heightLogo"></logo>
+           <Logo :height="heightLogo"/>
            <Navbar class="side-menu" :height="heightNavbar"/>
-           <copyright v-show="!store.navMenuIsClosed" :height="heightCopyright"></copyright>
+           <Copyright v-show="!store.isNavMenuFold" :height="heightCopyright"/>
        </div>
     </ElAside>
 </template>
@@ -17,7 +17,7 @@ import Copyright from "./Copyright.vue";
 import Logo from "./Logo.vue";
 import {onMounted, ref, watch} from "vue";
 
-import {useProjectStore} from "@/pinia.ts";
+import {useProjectStore} from "@/store.ts";
 
 const store = useProjectStore()
 

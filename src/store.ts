@@ -14,9 +14,8 @@ export const useProjectStore = defineStore('storeProject', {
             heightContent: 0, // 内容高度
             widthContent: 0, // 内容宽度
         },
-        navMenuIsClosed: false, // navMenu 是否折叠状态
-        isInMobile: false, // 是否是手机端
-        isShowingMenuToggleBtn: false, // 是否显示移动端的菜单切换按钮
+        isNavMenuFold: false, // navMenu 是否折叠状态
+        isShowFloatingMenuBtn: false, // 是否显示移动端的菜单切换按钮
         authorization: null as EntityAuthorization, // authorization
 
         isShowUserSelfLocation: false, // 是否显示用户自己的位置， http 下无用，https 才有用

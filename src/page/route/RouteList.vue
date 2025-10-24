@@ -188,7 +188,7 @@
 <script lang="ts" setup>
 import {Base64} from "js-base64"
 import { policyArray, policyMap } from './DrivingPolicy'
-import {useProjectStore} from "@/pinia";
+import {useProjectStore} from "@/store.ts";
 import {dateFormatter} from "@/utility";
 import {computed, onMounted, reactive, ref, watch} from "vue";
 import {useRoute, useRouter} from "vue-router";

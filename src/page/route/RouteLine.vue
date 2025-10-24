@@ -1,13 +1,12 @@
 <template>
     <div class="map-container">
-        <div class="button-float btn-router-list"
-             @click="isRouteListShowed = true"
-             v-if="!isRouteListShowed && store.isInPortraitMode">
-            <ElIcon><Tickets/></ElIcon>
-        </div>
+        <FloatingButton
+            :show="!isRouteListShowed && store.isInPortraitMode"
+            custom-class="btn-router-list"
+            @click="isRouteListShowed = true" />
 
         <!-- 路线列表 -->
-        <div class="float-route-list-panel" v-if="isRouteListShowed" :style="`height: ${store.windowInsets.height - 40}px`">
+        <div class="float-route-list-panel" v-if="isRouteListShowed" :style="routeListPanelStyle">
             <RouteLineListPanel
                 @choseLine="changeLine"
                 @labelToggle="toggleLabel"/>
@@ -32,12 +31,13 @@
 import AMapLoader from '@amap/amap-jsapi-loader'
 import ICON from "@/assets/icons"
 import RouteDetailPanel from "./components/RouteDetailPanel.vue"
+import FloatingButton from "@/layout/FloatingButton.vue"
 
 import {Base64} from "js-base64"
 import RouteLineListPanel from "@/page/route/components/RouteLineListPanel.vue";
 import axios from "axios";
-import {useProjectStore} from "@/pinia";
-import {onMounted, onUnmounted, ref, watch} from "vue";
+import {useProjectStore} from "@/store.ts";
+import {onMounted, onUnmounted, ref, watch, computed} from "vue";
 import {useRoute, useRouter} from "vue-router";
 import {key_service, key_web_js} from "@/mapConfig.ts";
 import {EntityRoute, EntityRoutePoint} from "@/page/route/Route.ts";
@@ -70,6 +70,20 @@ const currentMarkers = ref<any[]>([]) // 地图上的标记点
 const drivingInfo = ref({
     distance: '',
     time: ''
+})
+
+const routeListPanelStyle = computed(() => {
+    if (store.isInPortraitMode) {
+        return {
+            top: 0,
+            height: 'auto',
+            minHeight: 'auto',
+            width: '100%',
+        }
+    }
+    return {
+        height: `${store.windowInsets.height - 40}px`,
+    }
 })
 
 // 跟踪天气请求以便清理
@@ -196,12 +210,12 @@ function loadLine(map: any, line: EntityRoute) {
         currentDragRouting.destroy()
         currentDragRouting = null
     }
-    
+
     if (!line.pathArray || line.pathArray.length === 0) {
         console.warn('路线数据为空:', line)
         return
     }
-    
+
     map.plugin('AMap.DragRoute', () => {
         // path 是驾车导航的起、途径和终点，官方建议最多放置 16个 途经点，以保证良好体验
         let path = line.pathArray!.map (item => item.position)
@@ -266,7 +280,7 @@ function fetchWeatherFromRoute(steps: any){
     if (!isComponentMounted.value) {
         return
     }
-    
+
     // 取消任何现有的天气请求
     weatherRequests.value.forEach(request => {
         if (request && request.cancel) {
@@ -274,7 +288,7 @@ function fetchWeatherFromRoute(steps: any){
         }
     })
     weatherRequests.value = []
-    
+
     let districtsMap = new Map()
     steps.forEach((item: any) => {
         item.cities && item.cities.forEach((city: any) => {
@@ -356,11 +370,11 @@ watch(()=>route.query.lineId, newValue => {
         window.map.remove(marker)
     })
     currentMarkers.value = []
-    
+
     currentDragRouting && currentDragRouting.destroy() // 销毁行程规划
     window.map.clearInfoWindow() // 清除地图上的信息窗体
     window.map.clearMap() // 删除所有标记点
-    
+
     if (newValue) {
         getLineInfo(newValue as string)
     }
@@ -369,7 +383,7 @@ watch(()=>route.query.lineId, newValue => {
 onUnmounted(() => {
     // 设置标志以防止新操作
     isComponentMounted.value = false
-    
+
     // 取消任何待处理的天气请求
     weatherRequests.value.forEach(request => {
         if (request && request.cancel) {
@@ -377,7 +391,7 @@ onUnmounted(() => {
         }
     })
     weatherRequests.value = []
-    
+
     // 清除标记点
     currentMarkers.value.forEach(marker => {
         if (window.map && marker) {
@@ -385,7 +399,7 @@ onUnmounted(() => {
         }
     })
     currentMarkers.value = []
-    
+
     currentDragRouting && currentDragRouting.destroy() // 销毁行程规划
     if (window.map) {
         window.map.clearInfoWindow() // 清除地图上的信息窗体
@@ -399,11 +413,6 @@ onUnmounted(() => {
 <style lang="scss" scoped>
 @import "../../scss/plugin";
 
-.btn-router-list{
-    position: absolute;
-    top: 20px;
-    left: 280px;
-}
 
 .map-container {
     position: relative
@@ -421,11 +430,6 @@ onUnmounted(() => {
     .float-route-list-panel{
         left: 50%;
         transform: translateX(-50%);
-    }
-    .btn-router-list{
-        left: auto;
-        top: 10px;
-        right: 10px;
     }
 }
 

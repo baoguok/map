@@ -30,7 +30,7 @@
 
 <script lang="ts" setup>
 import {onMounted, onUnmounted, reactive, ref, watch} from "vue";
-import {useProjectStore} from "@/pinia.ts";
+import {useProjectStore} from "@/store.ts";
 import {useRouter} from "vue-router";
 import {ElMessage, FormRules} from "element-plus";
 import {getAuthorization, setAuthorization} from "@/utility.ts";

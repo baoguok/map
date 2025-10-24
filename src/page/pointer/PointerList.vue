@@ -146,7 +146,7 @@
 </template>
 <script lang="ts" setup>
 import {Base64} from "js-base64"
-import {useProjectStore} from "@/pinia";
+import {useProjectStore} from "@/store.ts";
 import {dateFormatter} from "@/utility";
 import {computed, onMounted, reactive, ref} from "vue";
 import {useRouter} from "vue-router";

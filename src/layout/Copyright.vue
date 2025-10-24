@@ -17,7 +17,7 @@
 
 <script lang="ts" setup>
 import packageInfo from "@/../package.json"
-import {useProjectStore} from "@/pinia.ts";
+import {useProjectStore} from "@/store.ts";
 import {useRouter} from "vue-router";
 import {deleteAuthorization,} from "@/utility.ts";
 
