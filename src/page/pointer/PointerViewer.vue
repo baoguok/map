@@ -397,11 +397,6 @@ function clearAllMarkers(map: any) {
         left: 50%;
         transform: translateX(-50%);
     }
-    :deep(.btn-router-list){
-        left: auto !important;
-        top: 10px !important;
-        right: 10px !important;
-    }
 }
 
 </style>

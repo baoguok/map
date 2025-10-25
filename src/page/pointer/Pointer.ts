@@ -1,4 +1,4 @@
-interface EntityPointer {
+export interface EntityPointer {
     id?: number,                           // ID
     name: string,                          // *点图名
     note: string,                          // 简介
@@ -13,9 +13,11 @@ interface EntityPointer {
     pointers: string,                       // *路径点 json 字符串
     pointer_array?: Array<EntityPointerPoint>, // *路径点
 
+    nickname: string,                      // 创建用户
+    username: string,                      // 用户名
 }
 
-interface EntityPointerPoint{
+export interface EntityPointerPoint{
     note: string,
     img?: string,
     position: [number, number],
@@ -23,14 +25,14 @@ interface EntityPointerPoint{
     name: string
 }
 
-enum EnumPointerType {
+export enum EnumPointerType {
      "yellow" = "yellow",
      "orange" = "orange",
      "red" = "red",
      "green" = "green",
      "blue" = "blue",
 }
-const EnumPointerTypeMap = new Map([
+export const EnumPointerTypeMap = new Map([
     [EnumPointerType.yellow, "黄色"],
     [EnumPointerType.orange, "橙色"],
     [EnumPointerType.red, "红色"],
@@ -38,8 +40,3 @@ const EnumPointerTypeMap = new Map([
     [EnumPointerType.blue, "蓝色"],
 ])
 
-export {
-    type EntityPointer,
-    type EntityPointerPoint,
-    EnumPointerType, EnumPointerTypeMap
-}
